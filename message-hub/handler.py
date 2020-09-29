@@ -4,7 +4,7 @@ import ast
 #import requests
 import simplejson as json
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
@@ -85,6 +85,8 @@ def post_message(workspace, function): # pylint: disable=R0913,C0301,W0613  # Ma
         message['original_lang']=message_data['lang']
         message['translations'][message_data['lang']]=message_data['message_text']
         message['moderate']=message_data['moderate']
+        if message_data.get('moderate') == 'true':
+            message['mod_status']='needs_review'
         TABLE.put_item(Item=message)
         resp['id']=message['id']
         ret=200
@@ -108,7 +110,7 @@ def get_message(workspace, function,m_id,req_lang): # pylint: disable=R0913,C030
         trans_message=translate_message(trans_message,req_lang)
         TABLE.put_item(Item=trans_message)
     if trans_message['moderate']=="true":
-        if trans_message.get('moderation_approved')=="true":
+        if str(trans_message.get('mod_status')).startswith('approved'):
             ret_text=trans_message['translations'].get(req_lang,'Unavailable')
         else:
             ret_text='Moderation Required'
@@ -129,13 +131,19 @@ def translate_message(message,req_lang):
 #get
 #https://dev.api.cot-refinery.com/dev/message_hub/moderate_list/lang
 
-#@app.route(
-#    "/<string:workspace>/<string:function>/moderate_list/<string:req_lang>",
-#    methods=["GET"])
-#def get_moderation(workspace, function,m_id,req_lang): # pylint: disable=R0913,C0301,W0613  # Many arguments for reusable code and some extras to make the routing work
-#    """ Return all languages """
-#    mod_message=TABLE.scan(FileterCondition=Attr('moderate').eq('true') & Attr('moderation_approved').not_exists)['Items']
+@app.route(
+    "/<string:workspace>/<string:function>/moderate_list/<string:req_lang>",
+    methods=["GET"])
+def get_moderation(workspace, function,req_lang): # pylint: disable=R0913,C0301,W0613  # Many arguments for reusable code and some extras to make the routing work
+    """ Return all languages """
+    mod_message=TABLE.scan(
+            FilterExpression=Attr('moderate').eq('true')
+            & Attr('original_lang').eq(req_lang)
+            & Attr('mod_status').begins_with('needs'))['Items']
+    return jsonify(mod_message),200
 
+# needs, approved, completed, approved_by_human, approved_by_automation)
+# auto_ok, human_ok, needs_human, auto_rejected, human_rejected.
 
 #post
 #https://api.cot-refinery.com/dev/message_hub/moderate/id/lang
