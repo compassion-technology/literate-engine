@@ -2,7 +2,9 @@
 import time
 import uuid
 import ast
+import decimal
 #import requests
+import operator
 import simplejson as json
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -82,7 +84,7 @@ def post_message(workspace, function): # pylint: disable=R0913,C0301,W0613  # Ma
     if message_data['lang'] in lang and \
         message_data['moderate'] in ['true','false']:
         message['id']=str(uuid.uuid4())
-        message['create_dttm']=time.time()
+        message['create_dttm']=decimal.Decimal(time.time())
         message['conversation_id']=message_data['conversation_id']
         message['original_lang']=message_data['lang']
         message['translations'][message_data['lang']]=message_data['message_text']
@@ -182,10 +184,10 @@ def get_conversation(workspace, function, conv_id, req_lang): # pylint: disable=
         else:
             ret_text=conv_message['translations'].get(req_lang)
         resp_messages.append(dict({'id':conv_message['id'], 'text':ret_text, 'create_dttm':conv_message.get('create_dttm',0)}))
-    response=resp_messages.sort(key=lambda k: k.get('create_dttm',0))
+    resp_messages.sort(key=operator.itemgetter('create_dttm'))
 
 
-    return jsonify(response),200
+    return jsonify(resp_messages),200
 
 #https://dev.api.cot-refinery.com/dev/message_hub/moderate/{id}/{approve/reject}
 @app.route(
