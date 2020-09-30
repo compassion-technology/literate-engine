@@ -2,7 +2,7 @@
 import time
 import uuid
 import ast
-#import requests
+import requests
 import simplejson as json
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -81,14 +81,18 @@ def post_message(workspace, function): # pylint: disable=R0913,C0301,W0613  # Ma
     resp=dict()
     if message_data['lang'] in lang and \
         message_data['moderate'] in ['true','false']:
+        moderate, issues = moderate_text(message_data['message_text'], message_data['lang'])
         message['id']=str(uuid.uuid4())
         message['create_dttm']=time.time()
         message['conversation_id']=message_data['conversation_id']
         message['original_lang']=message_data['lang']
         message['translations'][message_data['lang']]=message_data['message_text']
         message['moderate']=message_data['moderate']
-        if message_data.get('moderate') == 'true':
+        if moderate or message_data.get('moderate') == 'true':
             message['mod_status']='needs_review'
+        else:
+            message['mod_status']='approve_auto'
+        message['issues'] = issues
         TABLE.put_item(Item=message)
         resp['id']=message['id']
         ret=200
@@ -203,3 +207,22 @@ def moderate_message(workspace, function, m_id, action): # pylint: disable=R0913
     else:
         action='Invalid Action'
     return jsonify(action),200
+
+def moderate_text(text, lang):
+  payload = {"text":text,"lang":lang,"mode":"standard","api_user":os.environ['API_KEY'],"api_secret":os.environ['API_SECRET']}
+
+  res = requests.post("https://api.sightengine.com/1.0/text/check.json",
+                      data=payload)
+  if (res.status_code != 200):
+    raise Exception(res.content)
+  
+  moderations = json.loads(res.text)
+  checks = ["link", "personal","profanity"]
+  results = map(lambda check: moderations[check], checks)
+
+  matches = []
+  for result in results:
+   matches.extend(result["matches"])
+  types = list(map(lambda match: match["type"], matches))
+
+  return len(types)>0, types
