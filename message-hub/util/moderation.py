@@ -12,11 +12,12 @@ def moderate_text(text, lang):
     raise Exception(res.content)
   
   moderations = json.loads(res.text)
-  print(moderations)
   checks = ["link", "personal","profanity"]
   results = map(lambda check: moderations[check], checks)
-  #matches = sum(results)
-  #print(matches)
-  print(results)
 
-moderate_text("5034351574", "en")
+  matches = []
+  for result in results:
+   matches.extend(result["matches"])
+  types = list(map(lambda match: match["type"], matches))
+
+  return len(types)>0, types
