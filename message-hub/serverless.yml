@@ -11,7 +11,7 @@
 #
 # Happy Coding!
 
-service: message-hub
+service: message
 # app and org for use with dashboard.serverless.com
 #app: your-app-name
 #org: your-org-name
@@ -27,6 +27,19 @@ provider:
 # you can overwrite defaults here
   stage: ${env:STAGE}
   region: us-east-2
+
+  # you can add statements to the Lambda function's IAM Role here
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - translate:TranslateText
+      Resource: "*"
+  environment:
+    MESSAGE_HUB_NAME: message-${opt:stage, self:provider.stage}-hub
 
 # you can add statements to the Lambda function's IAM Role here
 #  iamRoleStatements:
@@ -62,7 +75,7 @@ package:
 #    - exclude-me-dir/**
 
 functions:
-  message-hub:
+  hub:
     handler: wsgi_handler.handler
     events:
       - https: ANY /
@@ -139,11 +152,11 @@ resources:
       Type: "Custom::KongRoute"
       Properties:
         ServiceToken: ${env:KONG_ROUTE_ARN}
-        name: ${self:provider.environment.DATA_RECEIVER_ROUTE_NAME}
-        methods: ["POST","GET","DELETE"]
-        paths: ["/${opt:stage, self:provider.stage}/data_receiver"]
+        name: ${self:provider.environment.MESSAGE_HUB_NAME}
+        methods: ["POST","GET","PUT"]
+        paths: ["/${opt:stage, self:provider.stage}/message_hub"]
         aws_region: "us-east-2"
-        acl_allow: ["BI_Users"]
+        acl_allow: ["Message_Hub"]
   Outputs:
     Result:
       Value: !GetAtt KongRouteResource.Results
