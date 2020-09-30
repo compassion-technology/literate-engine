@@ -1,4 +1,5 @@
 """ handle message translation moderation and storage for audit """
+import time
 import uuid
 import ast
 #import requests
@@ -81,6 +82,7 @@ def post_message(workspace, function): # pylint: disable=R0913,C0301,W0613  # Ma
     if message_data['lang'] in lang and \
         message_data['moderate'] in ['true','false']:
         message['id']=str(uuid.uuid4())
+        message['create_dttm']=time.time()
         message['conversation_id']=message_data['conversation_id']
         message['original_lang']=message_data['lang']
         message['translations'][message_data['lang']]=message_data['message_text']
@@ -168,9 +170,34 @@ subject
 private?
 moderate all messages?
 """
+@app.route(
+    "/<string:workspace>/<string:function>/conversation/<string:conv_id>/<string:req_lang>",
+    methods=["GET"])
+def get_conversation(workspace, function, conv_id, req_lang): # pylint: disable=R0913,C0301,W0613  # Many arguments for reusable code and some extras to make the routing work
+    """ Return all languages """
+    resp_messages=list()
+    conv_recs=TABLE.scan(
+            FilterExpression=Attr('conversation_id').eq(conv_id))['Items']
+    for conv_message in conv_recs:
+        if not conv_message['translations'].get(req_lang):
+            conv_message=translate_message(conv_message,req_lang)
+            TABLE.put_item(Item=conv_message)
+        if conv_message['moderate']=="true":
+            if str(conv_message.get('mod_status')).startswith('approved'):
+                ret_text=conv_message['translations'].get(req_lang,'Unavailable')
+            else:
+                ret_text='Moderation Required'
+        else:
+            ret_text=conv_message['translations'].get(req_lang)
+        resp_messages.append(dict({'id':conv_message['id'], 'text':ret_text, 'create_dttm':conv_message.get('create_dttm',0)}))
+    response=resp_messages.sort(key=lambda k: k.get('create_dttm',0))
+
+
+    return jsonify(resp_messages),200
 
 """
 post
 https://api.cot-refinery.com/dev/message_hub/conversation_list
 keywords
 """
+#https://dev.api.cot-refinery.com/dev/message_hub/moderate/{id}/{approve/reject}
