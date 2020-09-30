@@ -162,14 +162,6 @@ def get_moderation(workspace, function,req_lang): # pylint: disable=R0913,C0301,
 #        message['moderated_text']=message_data['moderated_text']
 #        TABLE.put_item(Item=message)
 
-"""
-post
-https://api.cot-refinery.com/dev/message_hub/conversation_create
-participants
-subject
-private?
-moderate all messages?
-"""
 @app.route(
     "/<string:workspace>/<string:function>/conversation/<string:conv_id>/<string:req_lang>",
     methods=["GET"])
@@ -193,11 +185,21 @@ def get_conversation(workspace, function, conv_id, req_lang): # pylint: disable=
     response=resp_messages.sort(key=lambda k: k.get('create_dttm',0))
 
 
-    return jsonify(resp_messages),200
+    return jsonify(response),200
 
-"""
-post
-https://api.cot-refinery.com/dev/message_hub/conversation_list
-keywords
-"""
 #https://dev.api.cot-refinery.com/dev/message_hub/moderate/{id}/{approve/reject}
+@app.route(
+    "/<string:workspace>/<string:function>/moderate/<string:m_id>/<string:action>",
+    methods=["PUT"])
+def moderate_message(workspace, function, m_id, action): # pylint: disable=R0913,C0301,W0613  # Many arguments for reusable code and some extras to make the routing work
+    """save moderated message status"""
+    message=TABLE.query(KeyConditionExpression=Key('id').eq(m_id))['Items'][0]
+    if action in {'approve','reject'}:
+        if action == 'approve':
+            message['mod_status']='approved_manual'
+        else:
+            message['mod_status']='rejected_manual'
+        TABLE.put_item(Item=message)
+    else:
+        action='Invalid Action'
+    return jsonify(action),200

@@ -153,7 +153,7 @@ resources:
       Properties:
         ServiceToken: ${env:KONG_ROUTE_ARN}
         name: ${self:provider.environment.MESSAGE_HUB_NAME}
-        methods: ["POST","GET","DELETE"]
+        methods: ["POST","GET","PUT"]
         paths: ["/${opt:stage, self:provider.stage}/message_hub"]
         aws_region: "us-east-2"
         acl_allow: ["Message_Hub"]
