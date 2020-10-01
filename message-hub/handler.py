@@ -1,10 +1,11 @@
 """ handle message translation moderation and storage for audit """
+import os
 import time
 import uuid
 import ast
-import requests
 import decimal
 import operator
+import requests
 import simplejson as json
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -75,7 +76,7 @@ def post_message(workspace, function): # pylint: disable=R0913,C0301,W0613  # Ma
     """ Add new message """
     message_bytes=request.data
     message_str = message_bytes.decode("UTF-8")
-    print(message_str)
+    #print(message_str)
     message_data = ast.literal_eval(message_str)
 
     message=dict()
@@ -83,17 +84,19 @@ def post_message(workspace, function): # pylint: disable=R0913,C0301,W0613  # Ma
     resp=dict()
     if message_data['lang'] in lang and \
         message_data['moderate'] in ['true','false']:
-        moderate, issues = moderate_text(message_data['message_text'], message_data['lang'])
         message['id']=str(uuid.uuid4())
         message['create_dttm']=decimal.Decimal(time.time())
         message['conversation_id']=message_data['conversation_id']
         message['original_lang']=message_data['lang']
         message['translations'][message_data['lang']]=message_data['message_text']
         message['moderate']=message_data['moderate']
-        if moderate or message_data.get('moderate') == 'true':
-            message['mod_status']='needs_review'
-        else:
-            message['mod_status']='approve_auto'
+        if message_data.get('moderate') == 'true':
+            moderate, issues = moderate_text(message_data['message_text'], message_data['lang'])
+            if moderate:
+                message['mod_status']='needs_review'
+                message['issues']=issues
+            else:
+                message['mod_status']='approve_auto'
         message['issues'] = issues
         TABLE.put_item(Item=message)
         resp['id']=message['id']
@@ -210,21 +213,22 @@ def moderate_message(workspace, function, m_id, action): # pylint: disable=R0913
         action='Invalid Action'
     return jsonify(action),200
 
-def moderate_text(text, lang):
-  payload = {"text":text,"lang":lang,"mode":"standard","api_user":os.environ['API_KEY'],"api_secret":os.environ['API_SECRET']}
+def moderate_text(text, req_lang):
+    """Call the external moderation service """
+    payload = {"text":text,"lang":req_lang,"mode":"standard","api_user":os.environ['API_USER'],"api_secret":os.environ['API_SECRET']}
 
-  res = requests.post("https://api.sightengine.com/1.0/text/check.json",
-                      data=payload)
-  if (res.status_code != 200):
-    raise Exception(res.content)
-  
-  moderations = json.loads(res.text)
-  checks = ["link", "personal","profanity"]
-  results = map(lambda check: moderations[check], checks)
+    res = requests.post("https://api.sightengine.com/1.0/text/check.json",
+                        data=payload)
+    if res.status_code != 200:
+        raise Exception(res.content)
 
-  matches = []
-  for result in results:
-   matches.extend(result["matches"])
-  types = list(map(lambda match: match["type"], matches))
+    moderations = json.loads(res.text)
+    checks = ["link", "personal","profanity"]
+    results = map(lambda check: moderations[check], checks)
 
-  return len(types)>0, types
+    matches = []
+    for result in results:
+        matches.extend(result["matches"])
+    types = list(map(lambda match: match["type"], matches))
+
+    return len(types)>0, types
