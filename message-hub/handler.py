@@ -96,8 +96,7 @@ def post_message(workspace, function): # pylint: disable=R0913,C0301,W0613  # Ma
                 message['mod_status']='needs_review'
                 message['issues']=issues
             else:
-                message['mod_status']='approve_auto'
-        message['issues'] = issues
+                message['mod_status']='approved_auto'
         TABLE.put_item(Item=message)
         resp['id']=message['id']
         ret=200
