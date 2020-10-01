@@ -74,13 +74,14 @@ export const PostMessage = () => {
   const [moderate, setModerate] = useState(false)
   const [selectedLang, setSelectedLang] = useState(languages.get('English'))
   const [conversation, setConversation] = useState<messageStructure[]>([])
-  const conversationID = 'abcd'
+  const conversationID = 'test-stuff'
   useEffect(() => {
     retrieveConversation(conversationID)
-    setInterval(() => {
+    const interval = setInterval(() => {
       retrieveConversation(conversationID)
     }, 2000)
-  }, [])
+    return () => clearInterval(interval)
+  }, [selectedLang])
   const postMessage = () => {
     try {
       const options = {
@@ -168,7 +169,6 @@ export const PostMessage = () => {
             onPress={() => {
               if (message) {
                 postMessage()
-                setMessage('')
               }
             }}
           />

@@ -17,7 +17,7 @@ const AppContent = () => {
       <Route exact path="/moderation">
         <Moderation />
       </Route>
-      <Route exact path="/post-message">
+      <Route exact path="/conversation">
         <PostMessage />
       </Route>
     </Switch>
