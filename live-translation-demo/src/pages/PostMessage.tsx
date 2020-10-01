@@ -69,9 +69,8 @@ interface messageStructure {
   text: string
 }
 
-export const PostMessage = () => {
+export const PostMessage = ({ moderate }: any) => {
   const [message, setMessage] = useState('')
-  const [moderate, setModerate] = useState(false)
   const [selectedLang, setSelectedLang] = useState(languages.get('English'))
   const [conversation, setConversation] = useState<messageStructure[]>([])
   const [idInput, setIdInput] = useState('')
@@ -145,6 +144,11 @@ export const PostMessage = () => {
   }
   return (
     <View>
+      <Text style={{ alignSelf: 'center', fontWeight: 'bold', fontSize: 14, marginTop: 10 }}>
+        {moderate
+          ? 'Moderated conversation (Example: Sponsor to child communication)'
+          : 'Unmoderated conversation (Example: Church to church communication)'}
+      </Text>
       <View style={{ flexDirection: 'row', alignSelf: 'center', alignItems: 'center', marginVertical: 20 }}>
         <Text>Preferred Language: </Text>
         <Picker
@@ -170,12 +174,7 @@ export const PostMessage = () => {
       <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
         <View style={{ alignContent: 'center', width: '40%' }}>
           <TextInput label="Message:" onChangeText={setMessage} value={message} />
-          <Button
-            label={moderate ? 'Needs Moderation' : 'No Moderation Needed'}
-            onPress={() => setModerate(!moderate)}
-            outlined
-          />
-          <View style={{ height: 50 }} />
+          <View style={{ height: 30 }} />
           <Button
             label="Submit"
             contained
