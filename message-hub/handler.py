@@ -1,10 +1,11 @@
 """ handle message translation moderation and storage for audit """
+import os
 import time
 import uuid
 import ast
 import decimal
-#import requests
 import operator
+import requests
 import simplejson as json
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -75,7 +76,7 @@ def post_message(workspace, function): # pylint: disable=R0913,C0301,W0613  # Ma
     """ Add new message """
     message_bytes=request.data
     message_str = message_bytes.decode("UTF-8")
-    print(message_str)
+    #print(message_str)
     message_data = ast.literal_eval(message_str)
 
     message=dict()
@@ -90,7 +91,12 @@ def post_message(workspace, function): # pylint: disable=R0913,C0301,W0613  # Ma
         message['translations'][message_data['lang']]=message_data['message_text']
         message['moderate']=message_data['moderate']
         if message_data.get('moderate') == 'true':
-            message['mod_status']='needs_review'
+            moderate, issues = moderate_text(message_data['message_text'], message_data['lang'])
+            if moderate:
+                message['mod_status']='needs_review'
+                message['issues']=issues
+            else:
+                message['mod_status']='approved_auto'
         TABLE.put_item(Item=message)
         resp['id']=message['id']
         ret=200
@@ -205,3 +211,23 @@ def moderate_message(workspace, function, m_id, action): # pylint: disable=R0913
     else:
         action='Invalid Action'
     return jsonify(action),200
+
+def moderate_text(text, req_lang):
+    """Call the external moderation service """
+    payload = {"text":text,"lang":req_lang,"mode":"standard","api_user":os.environ['API_USER'],"api_secret":os.environ['API_SECRET']}
+
+    res = requests.post("https://api.sightengine.com/1.0/text/check.json",
+                        data=payload)
+    if res.status_code != 200:
+        raise Exception(res.content)
+
+    moderations = json.loads(res.text)
+    checks = ["link", "personal","profanity"]
+    results = map(lambda check: moderations[check], checks)
+
+    matches = []
+    for result in results:
+        matches.extend(result["matches"])
+    types = list(map(lambda match: match["type"], matches))
+
+    return len(types)>0, types
