@@ -40,6 +40,8 @@ provider:
       Resource: "*"
   environment:
     MESSAGE_HUB_NAME: message-${opt:stage, self:provider.stage}-hub
+    API_USER: ${env:API_USER}
+    API_SECRET: ${env:API_SECRET}
 
 # you can add statements to the Lambda function's IAM Role here
 #  iamRoleStatements:
