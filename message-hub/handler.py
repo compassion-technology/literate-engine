@@ -192,10 +192,11 @@ def get_conversation(workspace, function, conv_id, req_lang): # pylint: disable=
                 if str(conv_message.get('mod_status')).startswith('needs'):
                     ret_text='Moderation Required'
                 else:
-                    ret_text="Message Rejected"
+                    ret_text=None
         else:
             ret_text=conv_message['translations'].get(req_lang)
-        resp_messages.append(dict({'id':conv_message['id'], 'text':ret_text, 'create_dttm':conv_message.get('create_dttm',0)}))
+        if ret_text:
+            resp_messages.append(dict({'id':conv_message['id'], 'text':ret_text, 'create_dttm':conv_message.get('create_dttm',0)}))
     resp_messages.sort(key=operator.itemgetter('create_dttm'))
 
 
