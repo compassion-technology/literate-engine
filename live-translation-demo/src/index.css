@@ -1,0 +1,40 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans',
+    'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+@font-face {
+  font-family: 'MaterialIcons-Regular';
+  src: local('MaterialIcons-Regular'), url(./assets/fonts/MaterialIcons-Regular.ttf) format('opentype');
+}
+
+@font-face {
+  font-family: 'Roboto-Light';
+  src: local('Roboto-Light'), url(./assets/fonts/Roboto-Light.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto-Regular';
+  src: local('Roboto-Regular'), url(./assets/fonts/Roboto-Regular.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto-Medium';
+  src: local('Roboto-Medium'), url(./assets/fonts/Roboto-Medium.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto-Bold';
+  src: local('Roboto-Bold'), url(./assets/fonts/Roboto-Bold.ttf) format('truetype');
+}
+
+input:focus {
+  outline: none;
+}

@@ -1,0 +1,7 @@
+After running NPM i go into node_modules/@ciorg/ccl/app/src/logger/LoggerProvider.tsx and replace 
+
+import Mixpanel from 'mixpanel-react-native'
+
+with 
+
+let Mixpanel: any
