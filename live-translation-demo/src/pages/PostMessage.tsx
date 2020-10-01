@@ -74,14 +74,15 @@ export const PostMessage = () => {
   const [moderate, setModerate] = useState(false)
   const [selectedLang, setSelectedLang] = useState(languages.get('English'))
   const [conversation, setConversation] = useState<messageStructure[]>([])
-  const conversationID = 'test-stuff'
+  const [idInput, setIdInput] = useState('')
+  const [conversationID, setConversationID] = useState('')
   useEffect(() => {
     retrieveConversation(conversationID)
     const interval = setInterval(() => {
       retrieveConversation(conversationID)
     }, 2000)
     return () => clearInterval(interval)
-  }, [selectedLang])
+  }, [selectedLang, conversationID])
   const postMessage = () => {
     try {
       const options = {
@@ -114,6 +115,9 @@ export const PostMessage = () => {
   }
 
   const retrieveConversation = (conversationId: string) => {
+    if (!conversationID) {
+      return
+    }
     try {
       const options = {
         method: 'GET',
@@ -152,6 +156,16 @@ export const PostMessage = () => {
             <Picker.Item label={l.key} value={l.value} />
           ))}
         </Picker>
+        <TextInput label="Conversation ID:" onChangeText={setIdInput} value={idInput} />
+        <Button
+          label="Submit ID"
+          contained
+          onPress={() => {
+            if (idInput) {
+              setConversationID(idInput)
+            }
+          }}
+        />
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
         <View style={{ alignContent: 'center', width: '40%' }}>
