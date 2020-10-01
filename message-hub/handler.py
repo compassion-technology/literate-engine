@@ -123,7 +123,10 @@ def get_message(workspace, function,m_id,req_lang): # pylint: disable=R0913,C030
         if str(trans_message.get('mod_status')).startswith('approved'):
             ret_text=trans_message['translations'].get(req_lang,'Unavailable')
         else:
-            ret_text='Moderation Required'
+            if str(trans_message.get('mod_status')).startswith('needs'):
+                ret_text='Moderation Required'
+            else:
+                ret_text="Message Rejected"
     else:
         ret_text=trans_message['translations'].get(req_lang)
     return jsonify(ret_text),200
@@ -186,10 +189,14 @@ def get_conversation(workspace, function, conv_id, req_lang): # pylint: disable=
             if str(conv_message.get('mod_status')).startswith('approved'):
                 ret_text=conv_message['translations'].get(req_lang,'Unavailable')
             else:
-                ret_text='Moderation Required'
+                if str(conv_message.get('mod_status')).startswith('needs'):
+                    ret_text='Moderation Required'
+                else:
+                    ret_text=None
         else:
             ret_text=conv_message['translations'].get(req_lang)
-        resp_messages.append(dict({'id':conv_message['id'], 'text':ret_text, 'create_dttm':conv_message.get('create_dttm',0)}))
+        if ret_text:
+            resp_messages.append(dict({'id':conv_message['id'], 'text':ret_text, 'create_dttm':conv_message.get('create_dttm',0)}))
     resp_messages.sort(key=operator.itemgetter('create_dttm'))
 
 
