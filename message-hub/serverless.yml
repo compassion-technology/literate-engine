@@ -79,6 +79,8 @@ package:
 functions:
   hub:
     handler: wsgi_handler.handler
+    package:
+      artifact:
     events:
       - https: ANY /
       - https: 'ANY {proxy+}'
